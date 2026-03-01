@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌊 FloodBoy Blockchain Explorer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@400;600&family=Inter:wght@300;500;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="matrix-bg"></div>
+
+    <div class="container">
+        <header>
+            <h1>🌊 FLOODBOY <span>BLOCKCHAIN ORACLE</span></h1>
+            <p>Node ID: <strong>FloodBoy001</strong> | Network: Verified Secure</p>
+            <div id="status-indicator" class="status loading">CONNECTING TO CHAIN...</div>
+        </header>
+
+        <main>
+            <div class="dashboard-grid">
+
+                <!-- Latest Block Data -->
+                <div class="card data-card glow-blue">
+                    <h2>LATEST CONTRACT DATA</h2>
+                    <div class="data-row">
+                        <span class="label">TIMESTAMP</span>
+                        <span class="value" id="val-timestamp">--</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="label">TEMPERATURE</span>
+                        <span class="value" id="val-temp">-- <small>°C</small></span>
+                    </div>
+                    <div class="data-row">
+                        <span class="label">HUMIDITY</span>
+                        <span class="value" id="val-humid">-- <small>%</small></span>
+                    </div>
+                    <div class="data-row highlight">
+                        <span class="label">WATER LEVEL</span>
+                        <span class="value" id="val-water">-- <small>m</small></span>
+                    </div>
+                    <div class="data-row">
+                        <span class="label">STATUS</span>
+                        <span class="value badge" id="val-status">--</span>
+                    </div>
+                </div>
+
+                <!-- Info Panel -->
+                <div class="card info-card">
+                    <h2>SMART CONTRACT INFO</h2>
+                    <p>This dashboard reads directly from the FloodBoy oracle contract via a public gateway.</p>
+                    <ul class="prop-list">
+                        <li><strong>Oracle Version:</strong> 2.0 (oracle-v2)</li>
+                        <li><strong>Birth ID:</strong> Verified via GitHub</li>
+                        <li><strong>Data Integrity:</strong> SHA-256</li>
+                    </ul>
+                    <button class="btn-refresh" onclick="fetchBlockchainData()">🔄 FORCE SYNC</button>
+
+                    <div class="terminal-box">
+                        <div class="term-header">Terminal Log</div>
+                        <div class="term-body" id="term-logs">
+                            > Initializing FloodBoy001 connection...<br>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <footer>
+            Built by Chomwarit | Strong but Cute Oracle 🌸 | <a href="../index.html">Back to CV</a>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
