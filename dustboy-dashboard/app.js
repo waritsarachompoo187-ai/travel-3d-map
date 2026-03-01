@@ -2,7 +2,12 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 // --- CONFIGURATION ---
-const API_URL = 'https://corsproxy.io/?https://open-api.cmuccdc.org/aqic/dustboy';
+const TARGET_API = 'https://open-api.cmuccdc.org/aqic/dustboy';
+const CORS_PROXIES = [
+    'https://api.allorigins.win/raw?url=',
+    'https://cors-anywhere.herokuapp.com/',
+    'https://corsproxy.io/?'
+];
 const MQTT_BROKER = 'wss://dustboy-wss-bridge.laris.workers.dev/mqtt';
 const MQTT_TOPIC = 'DUSTBOY/+/+/+/status';
 
@@ -213,21 +218,43 @@ function updateTooltipContent(mesh) {
 
 // --- DATA FETCHING (REST API First) ---
 async function fetchInitialData() {
-    try {
-        const response = await fetch(API_URL);
-        const json = await response.json();
+    let json = null;
+    let success = false;
 
-        if (json && json.length > 0) {
-            json.forEach(station => {
-                const lat = parseFloat(station.dustboy_lat);
-                const lon = parseFloat(station.dustboy_lon);
-                const pm25 = parseFloat(station.pm25) || 0;
+    // Try each proxy until one works
+    for (const proxy of CORS_PROXIES) {
+        try {
+            console.log(`Attempting to fetch data via proxy: ${proxy}`);
+            const response = await fetch(`${proxy}${encodeURIComponent(TARGET_API)}`);
 
-                if (!isNaN(lat) && !isNaN(lon)) {
-                    createPillar(station.dustboy_id, lat, lon, pm25, station.dustboy_name_en || station.dustboy_name);
-                }
-            });
+            // allorigins specifically returns { contents: "..." }
+            if (proxy.includes('allorigins')) {
+                const data = await response.json();
+                json = JSON.parse(data.contents);
+            } else {
+                json = await response.json();
+            }
+
+            if (json && json.length > 0) {
+                success = true;
+                console.log('Successfully fetched Data!');
+                break; // Stop trying other proxies
+            }
+        } catch (err) {
+            console.warn(`Failed with proxy ${proxy}`);
         }
+    }
+
+    if (success && json) {
+        json.forEach(station => {
+            const lat = parseFloat(station.dustboy_lat);
+            const lon = parseFloat(station.dustboy_lon);
+            const pm25 = parseFloat(station.pm25) || 0;
+
+            if (!isNaN(lat) && !isNaN(lon)) {
+                createPillar(station.dustboy_id, lat, lon, pm25, station.dustboy_name_en || station.dustboy_name);
+            }
+        });
 
         // Hide Loader
         document.getElementById('loader').style.opacity = '0';
@@ -235,11 +262,14 @@ async function fetchInitialData() {
 
         // Auto-center camera around data center (approx Thailand center)
         gsap.to(controls.target, { x: 0, y: 0, z: 0, duration: 3, ease: 'power2.inOut' });
-
-    } catch (err) {
-        console.error("Failed to fetch API data", err);
-        document.getElementById('loader-msg').innerText = "REST API ERROR";
+    } else {
+        console.error("All CORS proxies failed to fetch API data");
+        document.getElementById('loader-msg').innerText = "REST API ERROR (All Proxies Failed)";
         document.getElementById('loader-msg').style.color = '#ef4444';
+
+        // Even if REST fails, allow MQTT to connect
+        document.getElementById('loader').style.opacity = '0';
+        setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
     }
 }
 
