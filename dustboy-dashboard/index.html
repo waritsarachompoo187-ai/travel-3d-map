@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚡ DUSTBOY CYBER-CORE | Real-time 3D Dashboard</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Dependencies -->
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <!-- Three.js Import Map -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+
+<body>
+
+    <!-- Loading Screen -->
+    <div id="loader">
+        <div class="loader-spinner"></div>
+        <div class="loader-text" id="loader-msg">INITIALIZING MATRIX...</div>
+    </div>
+
+    <!-- 3D Canvas Container -->
+    <div id="canvas-container"></div>
+
+    <!-- Heads Up Display (Glassmorphism) -->
+    <div id="hud-container">
+
+        <header class="hud-panel">
+            <div>
+                <h1>DustBoy Matrix</h1>
+                <p>NATIONWIDE PM2.5 // LIVE SENSOR GRID</p>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background:#00ff80; box-shadow: 0 0 5px #00ff80;"></div>0-15
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background:#ffcc00; box-shadow: 0 0 5px #ffcc00;"></div>16-25
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background:#ff6b00; box-shadow: 0 0 5px #ff6b00;"></div>26-37
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background:#ff003c; box-shadow: 0 0 5px #ff003c;"></div>38+
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div id="mqtt-status" class="status-badge connecting">CONNECTING...</div>
+
+                <div class="stats-container">
+                    <div class="stat-box">
+                        <div class="stat-title">Sensors Active</div>
+                        <div class="stat-value" id="stat-sensors">0</div>
+                    </div>
+                    <div class="stat-box highlight">
+                        <div class="stat-title">Network Max AQI</div>
+                        <div class="stat-value" id="stat-max"
+                            style="color: #fb7185; text-shadow: 0 0 15px rgba(251, 113, 133, 0.5);">0 <span>PM2.5</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="controls-hint hud-panel" style="padding: 10px 15px;">
+            <span>[Left Click]</span> Rotate | <span>[Right Click]</span> Pan | <span>[Scroll]</span> Zoom |
+            <span>[Click Pillar]</span> Inspect
+        </div>
+
+        <div id="sensor-tooltip" class="hud-panel">
+            <div class="sensor-header">
+                <div class="sensor-name" id="tip-name">Select a Node</div>
+                <div class="sensor-id" id="tip-id">--</div>
+            </div>
+            <div class="sensor-data-grid">
+                <div class="stat-box">
+                    <div class="stat-title">PM2.5</div>
+                    <div class="stat-value" id="tip-pm25">--<span>ug/m3</span></div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-title">PM10</div>
+                    <div class="stat-value" id="tip-pm10">--<span>ug/m3</span></div>
+                </div>
+                <div class="stat-box" style="grid-column: span 2;">
+                    <div class="stat-title">Temp / Humidity</div>
+                    <div class="stat-value"
+                        style="font-size: 1.2rem; color: #facc15; text-shadow: 0 0 10px rgba(250, 204, 21, 0.4);"
+                        id="tip-environ">-- / --</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Application Logic -->
+    <script type="module" src="app.js"></script>
+
+</body>
+
+</html>
