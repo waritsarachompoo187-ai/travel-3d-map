@@ -217,15 +217,24 @@ function updateTooltipContent(mesh) {
 
 
 // --- DATA FETCHING (REST API First) ---
+async function fetchWithTimeout(resource, options = {}) {
+    const { timeout = 5000 } = options;
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeout);
+    const response = await fetch(resource, { ...options, signal: controller.signal });
+    clearTimeout(id);
+    return response;
+}
+
 async function fetchInitialData() {
     let json = null;
     let success = false;
 
-    // Try each proxy until one works
+    // Try each proxy until one works, with a strict 4-second timeout each
     for (const proxy of CORS_PROXIES) {
         try {
             console.log(`Attempting to fetch data via proxy: ${proxy}`);
-            const response = await fetch(`${proxy}${encodeURIComponent(TARGET_API)}`);
+            const response = await fetchWithTimeout(`${proxy}${encodeURIComponent(TARGET_API)}`, { timeout: 4000 });
 
             // allorigins specifically returns { contents: "..." }
             if (proxy.includes('allorigins')) {
@@ -256,21 +265,19 @@ async function fetchInitialData() {
             }
         });
 
-        // Hide Loader
-        document.getElementById('loader').style.opacity = '0';
-        setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
-
         // Auto-center camera around data center (approx Thailand center)
         gsap.to(controls.target, { x: 0, y: 0, z: 0, duration: 3, ease: 'power2.inOut' });
     } else {
         console.error("All CORS proxies failed to fetch API data");
-        document.getElementById('loader-msg').innerText = "REST API ERROR (All Proxies Failed)";
+        document.getElementById('loader-msg').innerText = "REST API ERROR (Falling back to MQTT only)";
         document.getElementById('loader-msg').style.color = '#ef4444';
+    }
 
-        // Even if REST fails, allow MQTT to connect
+    // Always hide the loader, even if REST fails, to allow viewing the map and MQTT
+    setTimeout(() => {
         document.getElementById('loader').style.opacity = '0';
         setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
-    }
+    }, 1000); // 1s buffer for the user to read the error if it occurred
 }
 
 // --- MQTT LIVE UPDATES ---
