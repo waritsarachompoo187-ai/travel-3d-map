@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 // --- CONFIGURATION ---
-const API_URL = 'https://open-api.cmuccdc.org/aqic/dustboy';
+const API_URL = 'https://corsproxy.io/?https://open-api.cmuccdc.org/aqic/dustboy';
 const MQTT_BROKER = 'wss://dustboy-wss-bridge.laris.workers.dev/mqtt';
 const MQTT_TOPIC = 'DUSTBOY/+/+/+/status';
 
@@ -94,19 +94,19 @@ function createPillar(id, lat, lon, pm25, name) {
         roughness: 0.2,
         metalness: 0.8
     });
-    
+
     const mesh = new THREE.Mesh(boxGeo, mat);
     const pos = latLonToVector3(lat, lon);
-    
+
     mesh.position.copy(pos);
-    
+
     // Scale height based on PM2.5 (min height 0.1)
     const targetHeight = Math.max(0.1, pm25 * 0.05);
     mesh.scale.y = 0; // Start at 0 for spawn animation
-    
+
     // Attach userData for Raycasting
     mesh.userData = { id, name, pm25, pm10: '--', temp: '--', humid: '--', color };
-    
+
     pillarGroup.add(mesh);
     sensors.set(id, mesh);
 
@@ -116,7 +116,7 @@ function createPillar(id, lat, lon, pm25, name) {
         duration: 2 + Math.random() * 2,
         ease: "elastic.out(1, 0.5)"
     });
-    
+
     updateGlobalStats(pm25);
 }
 
@@ -128,19 +128,19 @@ function updatePillar(id, data) {
         mesh.userData.pm25 = data.pm2_5;
         const newColor = getAQIColor(data.pm2_5);
         const targetHeight = Math.max(0.1, data.pm2_5 * 0.05);
-        
+
         // Ensure color is a THREE.Color instance
         const colorObj = new THREE.Color(newColor);
-        
+
         // Animate color and height
         gsap.to(mesh.scale, { y: targetHeight, duration: 1, ease: "power2.out" });
         gsap.to(mesh.material.color, { r: colorObj.r, g: colorObj.g, b: colorObj.b, duration: 1 });
         gsap.to(mesh.material.emissive, { r: colorObj.r, g: colorObj.g, b: colorObj.b, duration: 1 });
-        
+
         mesh.userData.color = newColor;
         updateGlobalStats(data.pm2_5);
     }
-    
+
     if (data.pm10 !== undefined) mesh.userData.pm10 = data.pm10;
     if (data.temperature_c !== undefined) mesh.userData.temp = data.temperature_c;
     if (data.humidity_rh !== undefined) mesh.userData.humid = data.humidity_rh;
@@ -154,7 +154,7 @@ function updatePillar(id, data) {
 function updateGlobalStats(newPm25) {
     maxPM25Value = Math.max(maxPM25Value, newPm25);
     document.getElementById('stat-sensors').innerText = sensors.size.toLocaleString();
-    if(newPm25 >= maxPM25Value) {
+    if (newPm25 >= maxPM25Value) {
         document.getElementById('stat-max').innerText = maxPM25Value;
     }
 }
@@ -186,7 +186,7 @@ function onMouseClick() {
     if (intersects.length > 0) {
         const object = intersects[0].object;
         selectedSensor = object;
-        
+
         // Visual feedback (pulse emissive)
         gsap.killTweensOf(object.material);
         object.material.emissiveIntensity = 2;
@@ -216,26 +216,26 @@ async function fetchInitialData() {
     try {
         const response = await fetch(API_URL);
         const json = await response.json();
-        
+
         if (json && json.length > 0) {
             json.forEach(station => {
                 const lat = parseFloat(station.dustboy_lat);
                 const lon = parseFloat(station.dustboy_lon);
                 const pm25 = parseFloat(station.pm25) || 0;
-                
+
                 if (!isNaN(lat) && !isNaN(lon)) {
                     createPillar(station.dustboy_id, lat, lon, pm25, station.dustboy_name_en || station.dustboy_name);
                 }
             });
         }
-        
+
         // Hide Loader
         document.getElementById('loader').style.opacity = '0';
         setTimeout(() => document.getElementById('loader').style.display = 'none', 500);
-        
+
         // Auto-center camera around data center (approx Thailand center)
         gsap.to(controls.target, { x: 0, y: 0, z: 0, duration: 3, ease: 'power2.inOut' });
-        
+
     } catch (err) {
         console.error("Failed to fetch API data", err);
         document.getElementById('loader-msg').innerText = "REST API ERROR";
@@ -264,7 +264,7 @@ function connectMQTT() {
             if (data && data.myName) {
                 // Determine ID (Sometimes myName, sometimes from MAC)
                 const id = data.myName;
-                
+
                 if (sensors.has(id)) {
                     updatePillar(id, data);
                 } else if (payload.ip && data.pm2_5 !== undefined) {
