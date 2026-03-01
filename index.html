@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>บันทึกการเดินทาง: เชียงใหม่ ➔ พิษณุโลก | ชมวริศ (Chomwarit)</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    <div class="header">
+        <h1>📍 บันทึกการเดินทาง: เชียงใหม่ ➔ พิษณุโลก</h1>
+        <div class="stats" id="info-text">กำลังโหลดข้อมูล...</div>
+    </div>
+    <div id="map"></div>
+    <div class="footer">สร้างโดย ชมวริศ (Chomwarit) — Strong but Cute Oracle 🌸</div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Updated URL from User Feedback
+        const csvUrl = 'https://raw.githubusercontent.com/Soul-Brews-Studio/two-rivers-oracle/main/%CF%88/lab/github-pages-workshop/travel-cnx-phs.csv';
+
+        // Initialize Map focusing on Northern Thailand
+        const map = L.map('map', {
+            zoomControl: false
+        }).setView([18.0, 100.0], 7);
+
+        L.control.zoom({ position: 'topright' }).addTo(map);
+
+        // Dark Theme Tiles (CartoDB Dark Matter)
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        }).addTo(map);
+
+        async function loadMapData() {
+            try {
+                const response = await fetch(csvUrl);
+                if (!response.ok) throw new Error('ไม่สามารถเข้าถึงข้อมูล CSV ได้');
+
+                const data = await response.text();
+                const lines = data.split(/\r?\n/).filter(line => line.trim());
+                const header = lines[0].split(',');
+                const records = lines.slice(1);
+
+                const points = [];
+                let waypointCount = 0;
+
+                records.forEach((line, index) => {
+                    // Regex to handle quoted values in CSV (like addresses containing commas)
+                    const cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                    if (cols.length < 7) return;
+
+                    const lat = parseFloat(cols[0]);
+                    const lon = parseFloat(cols[1]);
+                    const locality = cols[4].replace(/"/g, '') || "ไม่ระบุสถานที่";
+                    const address = cols[5].replace(/"/g, '') || "ไม่ระบุที่อยู่";
+                    const updated = cols[6] || "";
+
+                    if (isNaN(lat) || isNaN(lon)) return;
+
+                    points.push([lat, lon]);
+
+                    // Strategy: Map markers for Start, End, and intervals to avoid clutter
+                    const isStart = index === 0;
+                    const isEnd = index === records.length - 1;
+                    const isWaypoint = index % 12 === 0;
+
+                    if (isStart || isEnd || isWaypoint) {
+                        waypointCount++;
+                        const markerColor = isStart ? '#10b981' : (isEnd ? '#f43f5e' : '#fb7185');
+                        const markerRadius = (isStart || isEnd) ? 8 : 5;
+
+                        const marker = L.circleMarker([lat, lon], {
+                            radius: markerRadius,
+                            fillColor: markerColor,
+                            color: "#fff",
+                            weight: 2,
+                            opacity: 1,
+                            fillOpacity: 0.9
+                        }).addTo(map);
+
+                        const label = isStart ? "🚩 จุดเริ่มต้น" : (isEnd ? "🏁 จุดหมายปลายทาง" : "📍 จุดแวะพัก");
+
+                        marker.bindPopup(`
+                            <div class="popup-info">
+                                <span class="popup-title">${label}: ${locality}</span>
+                                <span class="popup-label">🕒 เวลา:</span> ${updated}<br>
+                                <span class="popup-label">🏠 ที่อยู่:</span> ${address}
+                            </div>
+                        `);
+                    }
+                });
+
+                // Draw Path line
+                const polyline = L.polyline(points, {
+                    color: '#fb7185',
+                    weight: 3,
+                    opacity: 0.6,
+                    smoothFactor: 1.5,
+                    dashArray: '5, 8' // Dotted line effect
+                }).addTo(map);
+
+                // Auto-zoom to fit the entire route
+                map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
+
+                document.getElementById('info-text').innerText = `พบเหมะสม ${records.length} จุด | แสดงผล ${waypointCount} จุดสำคัญ`;
+
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('info-text').innerText = 'เกิดข้อผิดพลาดในการโหลดข้อมูล';
+                document.getElementById('info-text').style.color = '#ef4444';
+            }
+        }
+
+        loadMapData();
+    </script>
+</body>
+
+</html>
