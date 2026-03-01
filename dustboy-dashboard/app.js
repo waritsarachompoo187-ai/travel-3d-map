@@ -295,8 +295,12 @@ function connectMQTT() {
     });
 
     client.on('message', (topic, message) => {
+        const msgStr = message.toString();
+        // Ignore "offline" status messages which are not valid JSON
+        if (msgStr === "offline" || msgStr === "online") return;
+
         try {
-            const payload = JSON.parse(message.toString());
+            const payload = JSON.parse(msgStr);
             const data = payload.d;
             if (data && data.myName) {
                 // Determine ID (Sometimes myName, sometimes from MAC)
@@ -308,11 +312,11 @@ function connectMQTT() {
                     // We don't have lat/lon from MQTT alone, so we can't spawn new pillars 
                     // without coordinates. We only update existing ones from the REST API.
                     // If we had coordinates in the MQTT payload, we could call createPillar here.
-                    console.log(`Received data for unknown sensor: ${id}`);
+                    // console.log(`Received data for unknown sensor: ${id}`);
                 }
             }
         } catch (e) {
-            console.error('JSON Parse error', e);
+            console.error('JSON Parse error on message:', msgStr, e);
         }
     });
 
